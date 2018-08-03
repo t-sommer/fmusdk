@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/t-sommer/fmusdk.svg?branch=master)](https://travis-ci.org/t-sommer/fmusdk)
+
 # FMU SDK
 
 The FMU SDK is a free software development kit provided by [QTronic](https://www.qtronic.de/). It demonstrates basic use of Functional Mockup Units (FMUs) as defined by the following Functional Mock-up Interface specifications for
