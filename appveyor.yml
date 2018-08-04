@@ -13,4 +13,4 @@ build:
   project: c:\projects\fmusdk\build\FMUSDK.sln
 
 artifacts:
-  - path: c:\projects\fmusdk\dist
+  - path: dist
