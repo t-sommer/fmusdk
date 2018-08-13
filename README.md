@@ -30,6 +30,33 @@ Compilation using install.bat requires that you have installed one of Microsoft 
 
 To build Linux or Mac OS X binaries of all FMUs and simulators, open command shell and run `make`. The build requires that you have installed the C and C++ compilers, libexpat and libxml2 libraries. To install these dependencies on Linux you can use a package manager like `sudo apt install g++`, `sudo apt install libexpat1-dev`, `sudo apt install libxml2-dev`.
 
+### Building the FMUs with CMake
+
+Install [CMake](https://cmake.org/) 3.2 or later, open a command line and change into the folder where you've cloned or extracted the FMU SDK.
+
+On Mac and Linux enter
+
+```
+mkdir build
+cmake -G "Unix Makefiles" ..
+make
+```
+
+on Windows enter
+
+```
+mkdir build
+cmake -G "Visual Studio 14 2015 Win64" ..
+msbuild FMUSDK.sln
+```
+
+which builds all FMUs into the `dist` folder. To get a list of the available generators enter
+
+```
+cmake --help
+```
+
+Alternatively you can use [CMake's graphical user interface](https://cmake.org/runningcmake/) to generate the build pipeline. 
 
 ## Simulating an FMU
 
