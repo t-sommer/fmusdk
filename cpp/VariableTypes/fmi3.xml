@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<fmiModelDescription fmiVersion="3.0-dev" modelName="VariableTypes" guid="8c4e810f-3df3-4a00-8276-176fa3c9f003">
+
+<CoSimulation modelIdentifier="VariableTypes" canHandleVariableCommunicationStepSize="true">
+</CoSimulation>
+
+<ModelExchange modelIdentifier="VariableTypes">
+</ModelExchange>
+
+<LogCategories>
+<Category name="logAll" />
+<Category name="logError" />
+<Category name="logFmiCall" />
+<Category name="logEvent" />
+</LogCategories>
+
+<DefaultExperiment startTime="0" stopTime="1"></DefaultExperiment>
+
+<ModelVariables>
+
+    <Variable name="float64_in" valueReference="0" description="Float64 input" causality="input">
+        <Float64 start="0" />
+    </Variable>
+
+    <Variable name="float64_out" valueReference="1" description="Float64 output" causality="output">
+        <Float64 start="0" />
+    </Variable>
+
+    <Variable name="int32_in" valueReference="2" description="Int32 input" causality="input">
+        <Int32 start="0" />
+    </Variable>
+
+    <Variable name="int32_out" valueReference="3" description="Int32 output" causality="output">
+        <Int32 start="0" />
+    </Variable>
+
+    <Variable name="uint64_in" valueReference="4" description="UInt64 input" causality="input">
+        <UInt64 start="0" />
+    </Variable>
+
+    <Variable name="uint64_out" valueReference="5" description="UInt64 output" causality="output">
+        <UInt64 start="0" />
+    </Variable>
+
+    <Variable name="boolean_in" valueReference="6" description="Boolean input" causality="input">
+        <Boolean start="0" />
+    </Variable>
+
+    <Variable name="boolean_out" valueReference="7" description="Boolean output" causality="output">
+        <Boolean start="0" />
+    </Variable>
+
+</ModelVariables>
+
+<ModelStructure>
+</ModelStructure>
+
+</fmiModelDescription>

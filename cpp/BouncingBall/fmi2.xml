@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<fmiModelDescription
+  fmiVersion="2.0"
+  modelName="BouncingBall"
+  guid="{8c4e810f-3df3-4a00-8276-176fa3c9f003}"
+  numberOfEventIndicators="1">
+
+<ModelExchange modelIdentifier="BouncingBall">
+</ModelExchange>
+
+<CoSimulation modelIdentifier="BouncingBall" canHandleVariableCommunicationStepSize="true">
+</CoSimulation>
+
+<LogCategories>
+  <Category name="logAll"/>
+  <Category name="logError"/>
+  <Category name="logFmiCall"/>
+  <Category name="logEvent"/>
+</LogCategories>
+
+<DefaultExperiment startTime="0" stopTime="3"></DefaultExperiment>
+
+<ModelVariables>
+  <ScalarVariable name="h" valueReference="1" description="height" causality="output" variability="continuous" initial="exact">
+    <Real start="1"/>
+  </ScalarVariable>
+  <ScalarVariable name="v" valueReference="2" description="velocity" causality="output" variability="continuous" initial="exact">
+    <Real start="0" derivative="1"/>
+  </ScalarVariable>
+  <ScalarVariable name="g" valueReference="3" description="gravity" causality="parameter" variability="fixed" initial="exact">
+    <Real start="-9.81" derivative="2"/>
+  </ScalarVariable>
+  <ScalarVariable name="e" valueReference="4" description="rebound factor" causality="parameter" variability="tunable" initial="exact">
+    <Real start="0.7" min="0.5" max="1"/>
+  </ScalarVariable>
+</ModelVariables>
+
+<ModelStructure>
+  <Outputs>
+    <Unknown index="1"/>
+    <Unknown index="2"/>
+  </Outputs>
+  <Derivatives>
+    <Unknown index="2"/>
+    <Unknown index="3"/>
+  </Derivatives>
+</ModelStructure>
+
+</fmiModelDescription>
