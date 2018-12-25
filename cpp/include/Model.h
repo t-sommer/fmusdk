@@ -6,6 +6,49 @@
 #include <vector>
 
 
+#if __STDC_VERSION__ >= 201112L
+#define NORETURN _Noreturn
+#define NORETURNATTR
+#elif defined(__cplusplus) && __cplusplus >= 201103L
+#if (defined(__GNUC__) && __GNUC__ >= 5) || \
+    (defined(__GNUC__) && defined(__GNUC_MINOR__) && __GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+#define NORETURN [[noreturn]]
+#define NORETURNATTR
+#elif (defined(__GNUC__) && __GNUC__ >= 3) || \
+      (defined(__GNUC__) && defined(__GNUC_MINOR__) && __GNUC__ == 2 && __GNUC_MINOR__ >= 8)
+#define NORETURN
+#define NORETURNATTR __attribute__((noreturn))
+#elif defined(__GNUC__)
+#define NORETURN
+#define NORETURNATTR
+#else
+#define NORETURN [[noreturn]]
+#define NORETURNATTR
+#endif
+#elif defined(__clang__)
+/* Encapsulated for Clang since GCC fails to process __has_attribute */
+#if __has_attribute(noreturn)
+#define NORETURN
+#define NORETURNATTR __attribute__((noreturn))
+#else
+#define NORETURN
+#define NORETURNATTR
+#endif
+#elif (defined(__GNUC__) && __GNUC__ >= 3) || \
+      (defined(__GNUC__) && defined(__GNUC_MINOR__) && __GNUC__ == 2 && __GNUC_MINOR__ >= 8) || \
+      (defined(__SUNPRO_C) && __SUNPRO_C >= 0x5110)
+#define NORETURN
+#define NORETURNATTR __attribute__((noreturn))
+#elif (defined(_MSC_VER) && _MSC_VER >= 1200) || \
+       defined(__BORLANDC__)
+#define NORETURN __declspec(noreturn)
+#define NORETURNATTR
+#else
+#define NORETURN
+#define NORETURNATTR
+#endif
+
+
 class Model {
     
 public:
@@ -51,7 +94,7 @@ public:
 protected:
     void info(const std::string& message);
     void warning(const std::string& message);
-    void error(const std::string& message) __attribute__((noreturn));
+	NORETURN void error(const std::string& message) NORETURNATTR;
     
 private:
     double m_time;
