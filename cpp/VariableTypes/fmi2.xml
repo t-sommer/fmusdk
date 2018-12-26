@@ -5,10 +5,10 @@
   guid="{8c4e810f-3df3-4a00-8276-176fa3c9f003}"
   numberOfEventIndicators="1">
 
-<ModelExchange modelIdentifier="Stair">
+<ModelExchange modelIdentifier="VariableTypes">
 </ModelExchange>
 
-<CoSimulation modelIdentifier="Stair" canHandleVariableCommunicationStepSize="true">
+<CoSimulation modelIdentifier="VariableTypes" canHandleVariableCommunicationStepSize="true">
 </CoSimulation>
 
 <LogCategories>
@@ -21,12 +21,39 @@
 <DefaultExperiment startTime="0" stopTime="1"></DefaultExperiment>
 
 <ModelVariables>
-  <ScalarVariable name="y" valueReference="0" description="stair signal" causality="output" variability="continuous" initial="exact">
-    <Real start="0"/>
-  </ScalarVariable>
+
+    <ScalarVariable name="real_in" valueReference="1" description="Real input" causality="input">
+        <Real start="0" />
+    </ScalarVariable>
+
+    <ScalarVariable name="real_out" valueReference="2" description="Real output" causality="output">
+        <Real start="0" />
+    </ScalarVariable>
+
+    <ScalarVariable name="integer_in" valueReference="13" description="Integer input" causality="input">
+        <Integer start="0" />
+    </ScalarVariable>
+
+    <ScalarVariable name="integer_out" valueReference="14" description="Integer output" causality="output">
+        <Integer start="0" />
+    </ScalarVariable>
+
+    <ScalarVariable name="boolean_in" valueReference="21" description="Boolean input" causality="input">
+        <Boolean start="0" />
+    </ScalarVariable>
+
+    <ScalarVariable name="boolean_out" valueReference="22" description="Boolean output" causality="output">
+        <Boolean start="0" />
+    </ScalarVariable>
+
 </ModelVariables>
 
 <ModelStructure>
+    <Outputs>
+        <Unknown index="2"/>
+        <Unknown index="4"/>
+        <Unknown index="6"/>
+    </Outputs>
 </ModelStructure>
 
 </fmiModelDescription>

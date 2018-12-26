@@ -11,7 +11,7 @@ class Stair : public Slave {
 private:
     // value references
     enum ValueReference {
-        vr_y
+        vr_y = 1
     };
     
     // variables

@@ -24,14 +24,17 @@ else ()
     set (FMI_PLATFORM ${FMI_PLATFORM}32)
 endif ()
 
-#add_executable(fmurun fmurun.c)
-#target_include_directories(fmurun PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(MODEL_NAMES BouncingBall Stair VariableTypes)
 
-foreach(MODEL_NAME Arrays BouncingBall Stair VariableTypes)
+if (${FMI_VERSION} STREQUAL "3")
+    list(APPEND MODEL_NAMES Arrays)
+endif()
+
+foreach(MODEL_NAME ${MODEL_NAMES})
 
 set(TARGET_NAME ${MODEL_NAME})
 
-SET(SOURCES
+set(SOURCES
   src/CVodeSolver.cpp
   src/Slave.cpp
   src/Model.cpp

@@ -49,9 +49,16 @@
 #endif
 
 
+enum State : int;
+
+
 class Model {
     
 public:
+
+    State m_state;
+    int m_fmiType;
+
     virtual ~Model() {}
     
     virtual void enterInitializationMode() {}
@@ -72,11 +79,10 @@ public:
     virtual std::vector<uint64_t> getUInt64(int vr);
     virtual std::vector<bool> getBool(int vr);
     virtual std::vector<const std::string*> getString(int vr);
-    virtual void setDouble(int vr, const double *value, int* index);
-    //virtual void setDouble(int vr, const std::vector<double>& value);
-    virtual void setInt32(int vr, int32_t value);
+    virtual void setDouble(int vr, const double value[], int* index);
+    virtual void setInt32(int vr, const int32_t value[], int* index);
     virtual void setUInt64(int vr, uint64_t value);
-    virtual void setBool(int vr, bool value);
+    virtual void setBool(int vr, const bool value[], int* index);
     virtual void setString(int vr, const std::string& value);
     virtual void getContinuousStates(double x[]) {}
     virtual void setContinuousStates(const double x[]) {}
@@ -92,12 +98,14 @@ public:
     virtual void enterEventMode() {}
     
 protected:
+    void assertState(State state);
     void info(const std::string& message);
     void warning(const std::string& message);
 	NORETURN void error(const std::string& message) NORETURNATTR;
-    
+
 private:
     double m_time;
+    std::string m_instanceName;
 
 public:
     void *m_logger;

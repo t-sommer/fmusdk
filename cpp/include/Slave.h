@@ -10,7 +10,6 @@ class Slave : public Model {
 public:
     virtual ~Slave() {}
     virtual void initialize();
-    virtual void enterInitializationMode() {}
     virtual void exitInitializationMode();
     virtual void doStep(double currentCommunicationPoint, double communicationStepSize, double noSetFMUStatePriorToCurrentPoint);
     

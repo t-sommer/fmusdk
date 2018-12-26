@@ -21,12 +21,15 @@
 <DefaultExperiment startTime="0" stopTime="1"></DefaultExperiment>
 
 <ModelVariables>
-  <ScalarVariable name="y" valueReference="0" description="stair signal" causality="output" variability="continuous" initial="exact">
+  <ScalarVariable name="y" valueReference="1" description="stair signal" causality="output" variability="continuous" initial="exact">
     <Real start="0"/>
   </ScalarVariable>
 </ModelVariables>
 
 <ModelStructure>
+  <Outputs>
+    <Unknown index="1"/>
+  </Outputs>
 </ModelStructure>
 
 </fmiModelDescription>

@@ -71,7 +71,7 @@ public:
     void initialize() override {
                 
         // set start values
-        h =  2;
+        h =  1;
         v =  0;
         g = -9.81;
         e =  0.7;

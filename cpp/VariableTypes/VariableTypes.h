@@ -11,7 +11,7 @@ class Stair : public Slave {
 private:
     // value references
     enum ValueReference {
-        vr_double_in,
+        vr_double_in = 1,
         vr_double_out,
         vr_float32_in,
         vr_float32_out,
@@ -189,23 +189,23 @@ public:
         switch (vr) {
             case vr_double_in:
             case vr_double_out:
-                m_double = value[*index++]; break;
+                m_double = value[*index++];
                 break;
             default:
-                Model::getDouble(vr);
+                Model::setDouble(vr, value, index);
         }
         
     }
 
-    void setInt32(int vr, int32_t value) override {
+    void setInt32(int vr, const int32_t* value, int* index) override {
         
         switch (vr) {
             case vr_int32_in:
             case vr_int32_out:
-                m_int32 = value;
+                m_int32 = value[*index++];
                 break;
             default:
-                Model::getInt32(vr);
+                Model::setInt32(vr, value, index);
         }
         
     }
@@ -223,15 +223,15 @@ public:
         
     }
     
-    void setBool(int vr, bool value) override {
+    void setBool(int vr, const bool value[], int* index) override {
         
         switch (vr) {
             case vr_bool_in:
             case vr_bool_out:
-                m_bool = value;
+                m_bool = value[*index++];
                 break;
             default:
-                Model::getBool(vr);
+                Model::setBool(vr, value, index);
         }
         
     }

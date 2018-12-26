@@ -51,11 +51,11 @@ vector<const string*> Model::getString(int vr) {
     error("Unknown value reference for type string: " + to_string(vr));
 }
 
-void Model::setDouble(int vr,  const double* value, int* index) {
+void Model::setDouble(int vr, const double value[], int* index) {
     error("Unknown value reference for type double: " + to_string(vr));
 }
 
-void Model::setInt32(int vr, int32_t value) {
+void Model::setInt32(int vr, const int32_t value[], int* index) {
     error("Unknown value reference for type int32: " + to_string(vr));
 }
 
@@ -63,7 +63,7 @@ void Model::setUInt64(int vr, uint64_t value) {
     error("Unknown value reference for type uint64: " + to_string(vr));
 }
 
-void Model::setBool(int vr, bool value) {
+void Model::setBool(int vr, const bool value[], int* index) {
     error("Unknown value reference for type bool: " + to_string(vr));
 }
 

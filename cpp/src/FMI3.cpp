@@ -4,6 +4,7 @@
 
 #define INSTANCE (static_cast<Model*>(c))
 
+
 void Model::info(const std::string &message) {
     auto logger = (fmi3CallbackLogger)(this->m_logger);
     logger(this, "instance", fmi3OK, "info", message.c_str());
