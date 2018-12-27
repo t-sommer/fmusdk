@@ -13,7 +13,8 @@
 
 CVodeSolver::CVodeSolver(Model &fmu) : m_fmu(fmu) {
     
-    m_cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
+    // call CVodeCreate to create the solver memory and specify the Backward Differentiation Formula
+    m_cvode_mem = CVodeCreate(CV_BDF);
     
     auto status = CVodeSetUserData(m_cvode_mem, this);
     

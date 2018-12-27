@@ -7,6 +7,8 @@ ENDFUNCTION()
 
 project (FMUSDK)
 
+ADD_SUBDIRECTORY(sundials)
+
 set(FMI_VERSION 2 CACHE STRING "FMI Version")
 set_property(CACHE FMI_VERSION PROPERTY STRINGS 2 3)
 
@@ -42,18 +44,19 @@ set(SOURCES
 )
 
 file(GLOB SUNDIALS_SOURCES
-  "src/cvode/*.c"
-  "src/sundials/*.c"
-  "src/nvec_ser/*.c"
-  "src/sunmat_band/*.c"
-  "src/sunmat_dense/*.c"
-  "src/sunlinsol_band/*.c"
-  "src/sunlinsol_dense/*.c"
+  "sundials/src/cvode/*.c"
+  "sundials/src/sundials/*.c"
+  "sundials/src/nvec_ser/*.c"
+  "sundials/src/sunmat_band/*.c"
+  "sundials/src/sunmat_dense/*.c"
+  "sundials/src/sunlinsol_band/*.c"
+  "sundials/src/sunlinsol_dense/*.c"
+  "sundials/src/sunnonlinsol/newton/*.c"
 )
 
 SET(HEADERS
   ${MODEL_NAME}/fmi${FMI_VERSION}.xml
-  include/sundials/CVodeSolver.h
+  include/CVodeSolver.h
   include/fmi${FMI_VERSION}/fmi${FMI_VERSION}Functions.h
   include/fmi${FMI_VERSION}/fmi${FMI_VERSION}FunctionTypes.h
   include/fmi${FMI_VERSION}/fmi${FMI_VERSION}TypesPlatform.h
@@ -66,6 +69,8 @@ SET(HEADERS
 
 add_library(${TARGET_NAME} SHARED ${HEADERS} ${SOURCES} ${SUNDIALS_SOURCES})
 
+#add_dependencies(${TARGET_NAME} NVECTOR_SERIAL)
+
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 11)
 
 source_group("sundials" FILES ${SUNDIALS_SOURCES})
@@ -74,10 +79,14 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dist)
 
 target_compile_definitions(${TARGET_NAME} PRIVATE DISABLE_PREFIX)
 
+message("CMAKE_CURRENT_SOURCE_DIR:" ${CMAKE_CURRENT_SOURCE_DIR})
+message("CMAKE_CURRENT_BINARY_DIR:" ${CMAKE_CURRENT_BINARY_DIR})
+
 target_include_directories(${TARGET_NAME} PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include/sundials"
   "${CMAKE_CURRENT_SOURCE_DIR}/include/fmi${FMI_VERSION}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/sundials/include"
+  "${CMAKE_CURRENT_BINARY_DIR}/sundials/include"
   ${MODEL_NAME}
 )
 
