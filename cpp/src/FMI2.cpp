@@ -223,7 +223,9 @@ bool isLegalState(fmi2Component c, void* function) {
                                                             | StepFailed
                                                             | Terminated; }
     
-    if (!(INSTANCE->m_state & mask)) {
+    State state = INSTANCE->m_state;
+    
+    if (!(state & mask)) {
         auto logger = (fmi2CallbackLogger)(INSTANCE->m_logger);
         logger(INSTANCE, "instance", fmi2Error, "error", "Illegal calling sequence");
         return false;
