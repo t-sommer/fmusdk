@@ -7,8 +7,6 @@ ENDFUNCTION()
 
 project (FMUSDK)
 
-ADD_SUBDIRECTORY(sundials)
-
 set(FMI_VERSION 2 CACHE STRING "FMI Version")
 set_property(CACHE FMI_VERSION PROPERTY STRINGS 2 3)
 
@@ -79,14 +77,10 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dist)
 
 target_compile_definitions(${TARGET_NAME} PRIVATE DISABLE_PREFIX)
 
-message("CMAKE_CURRENT_SOURCE_DIR:" ${CMAKE_CURRENT_SOURCE_DIR})
-message("CMAKE_CURRENT_BINARY_DIR:" ${CMAKE_CURRENT_BINARY_DIR})
-
 target_include_directories(${TARGET_NAME} PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include/fmi${FMI_VERSION}"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sundials/include"
-  "${CMAKE_CURRENT_BINARY_DIR}/sundials/include"
+  include
+  include/fmi${FMI_VERSION}
+  sundials/include
   ${MODEL_NAME}
 )
 
@@ -114,26 +108,10 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E 
   "${FMU_BUILD_DIR}/modelDescription.xml"
 )
 
-#add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-  # "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_NAME}/${MODEL_NAME}.c"
-#   "${FMU_BUILD_DIR}/sources/${MODEL_NAME}.c"
-# )
-
-#add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-#  "${CMAKE_CURRENT_SOURCE_DIR}/include/fmuTemplate.c"
-#  "${FMU_BUILD_DIR}/sources/fmuTemplate.c"
-#)
-
-#add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-#  "${CMAKE_CURRENT_SOURCE_DIR}/include/fmuTemplate.h"
-#  "${FMU_BUILD_DIR}/sources/fmuTemplate.h"
-#)
-
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_CURRENT_SOURCE_DIR}/dist/${MODEL_NAME}.fmu" --format=zip
   "modelDescription.xml"
   "binaries"
-#  "sources"
   WORKING_DIRECTORY ${FMU_BUILD_DIR}
 )
 
