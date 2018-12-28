@@ -1,3 +1,4 @@
 [submodule "cpp/sundials"]
 	path = cpp/sundials
 	url = https://github.com/LLNL/sundials.git
+	shallow = true
