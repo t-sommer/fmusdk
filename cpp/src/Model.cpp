@@ -70,3 +70,29 @@ void Model::setBool(int vr, const bool value[], int* index) {
 void Model::setString(int vr, const string& value) {
     error("Unknown value reference for type string: " + to_string(vr));
 }
+
+void* Model::getFMUState(){
+    error("Not implemented");
+}
+
+void Model::setFMUState(void *fmuState) { 
+    error("Not implemented");
+}
+
+void Model::freeFMUState(void *fmuState) { 
+    error("Not implemented");
+}
+
+size_t Model::getSerializedFMUStateSize(void *fmuState) {
+    error("Not implemented");
+}
+
+
+void Model::deserializeFMUState(const char *memory, size_t size, void** fmuState) {
+    error("Not implemented");
+}
+
+
+void Model::serializeFMUState(void *fmuState, char *memory, size_t size) { 
+    error("Not implemented");
+}

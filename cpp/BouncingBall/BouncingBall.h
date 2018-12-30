@@ -21,6 +21,10 @@ private:
     double g;
     double e;
     
+    struct FMUState {
+        double h, v, g, e;
+    };
+    
 public:    
     int getNumberOfContinuousStates() override { return 2; }
     int getNumberOfEventIndicators() override { return 1; }
@@ -96,6 +100,54 @@ public:
         }
     }
     
+    void* getFMUState() override {
+        return new FMUState { h, v, g, e };
+    }
+    
+    void setFMUState(void *fmuState) override {
+        auto s = reinterpret_cast<FMUState*>(fmuState);
+        h = s->h;
+        v = s->v;
+        g = s->g;
+        e = s->e;
+    }
+    
+    size_t getSerializedFMUStateSize(void* fmuState) override {
+        return sizeof(FMUState);
+    }
+    
+    void serializeFMUState(void *fmuState, char *memory, size_t size) override {
+        
+        if (size < sizeof(FMUState)) {
+            error("Not enough memory to serialize FMU state");
+        }
+        
+        memcpy(memory, fmuState, sizeof(FMUState));
+    }
+    
+    void deserializeFMUState(const char *memory, size_t size, void** fmuState) override {
+        
+        if (size < sizeof(FMUState)) {
+            error("Not enough memory to de-serialize FMU state");
+        }
+        
+        auto state = reinterpret_cast<FMUState*>(*fmuState);
+        
+        if (state == nullptr) {
+            state = new FMUState();
+        }
+        
+        auto serializedState = reinterpret_cast<const FMUState*>(memory);
+        
+        *state = *serializedState;
+        
+        *fmuState = state;
+    }
+    
+    virtual void freeFMUState(void *fmuState) override {
+        free(fmuState);
+    }
+
 };
 
 #endif /* BouncingBall_h */

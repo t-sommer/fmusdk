@@ -392,34 +392,63 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[], size_t 
 
 fmi2Status fmi2GetFMUstate(fmi2Component c, fmi2FMUstate* FMUstate) {
     ASSERT_STATE(fmi2GetFMUstate)
-    return fmi2Error;
-
+    try {
+        *FMUstate = INSTANCE->getFMUState();
+    } catch (std::exception const &e) {
+        return fmi2Error;
+    }
+    return fmi2OK;
 }
 
 fmi2Status fmi2SetFMUstate(fmi2Component c, fmi2FMUstate FMUstate) {
     ASSERT_STATE(fmi2SetFMUstate)
-    return fmi2Error;
+    try {
+        INSTANCE->setFMUState(FMUstate);
+    } catch (std::exception const &e) {
+        return fmi2Error;
+    }
+    return fmi2OK;
 }
 
 fmi2Status fmi2FreeFMUstate(fmi2Component c, fmi2FMUstate* FMUstate) {
     ASSERT_STATE(fmi2FreeFMUstate)
+    try {
+        INSTANCE->freeFMUState(FMUstate);
+    } catch (std::exception const &e) {
+        return fmi2Error;
+    }
     return fmi2Error;
 }
 
 fmi2Status fmi2SerializedFMUstateSize(fmi2Component c, fmi2FMUstate FMUstate, size_t *size) {
     ASSERT_STATE(fmi2SerializedFMUstateSize)
-    return fmi2Error;
+    try {
+        *size = INSTANCE->getSerializedFMUStateSize(FMUstate);
+    } catch (std::exception const &e) {
+        return fmi2Error;
+    }
+    return fmi2OK;
 }
 
 fmi2Status fmi2SerializeFMUstate(fmi2Component c, fmi2FMUstate FMUstate, fmi2Byte serializedState[], size_t size) {
     ASSERT_STATE(fmi2SerializeFMUstate)
-    return fmi2Error;
+    try {
+        INSTANCE->serializeFMUState(FMUstate, serializedState, size);
+    } catch (std::exception const &e) {
+        return fmi2Error;
+    }
+    return fmi2OK;
 }
 
 fmi2Status fmi2DeSerializeFMUstate(fmi2Component c, const fmi2Byte serializedState[], size_t size,
                                     fmi2FMUstate* FMUstate) {
     ASSERT_STATE(fmi2DeSerializeFMUstate)
-    return fmi2Error;
+    try {
+        INSTANCE->deserializeFMUState(serializedState, size, FMUstate);
+    } catch (std::exception const &e) {
+        return fmi2Error;
+    }
+    return fmi2OK;
 }
 
 fmi2Status fmi2GetDirectionalDerivative(fmi2Component c, const fmi2ValueReference vUnknown_ref[], size_t nUnknown,

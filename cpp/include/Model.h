@@ -92,6 +92,13 @@ public:
     virtual void setTime(double time) { m_time = time; }
     virtual double getTime() { return m_time; }
     
+    virtual void* getFMUState();
+    virtual void setFMUState(void *fmuState);
+    virtual void freeFMUState(void *fmuState);
+    virtual size_t getSerializedFMUStateSize(void* fmuState);
+    virtual void serializeFMUState(void *fmuState, char *memory, size_t size);
+    virtual void deserializeFMUState(const char *memory, size_t size, void** fmuState);
+
     virtual void completedIntegratorStep(bool *enterEventMode) {};
     
     virtual void enterContinuousTimeMode() {}
