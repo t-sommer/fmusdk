@@ -16,12 +16,13 @@ private:
     };
     
     // variables
-    double h;
-    double v;
-    double g;
-    double e;
+    double m_h;
+    double m_v;
+    double m_g;
+    double m_e;
     
     struct FMUState {
+        State state;
         double h, v, g, e;
     };
     
@@ -32,10 +33,10 @@ public:
     std::vector<double> getDouble(int vr) override {
         
         switch (vr) {
-            case vr_h: return { h };
-            case vr_v: return { v };
-            case vr_g: return { g };
-            case vr_e: return { e };
+            case vr_h: return { m_h };
+            case vr_v: return { m_v };
+            case vr_g: return { m_g };
+            case vr_e: return { m_e };
             default:   return Slave::getDouble(vr);
         }
         
@@ -44,56 +45,56 @@ public:
     void setDouble(int vr, const double* value, int* index) override {
         
         switch (vr) {
-            case vr_h: h = value[*index++]; break;
-            case vr_v: v = value[*index++]; break;
-            case vr_g: g = value[*index++]; break;
-            case vr_e: e = value[*index++]; break;
+            case vr_h: m_h = value[*index++]; break;
+            case vr_v: m_v = value[*index++]; break;
+            case vr_g: m_g = value[*index++]; break;
+            case vr_e: m_e = value[*index++]; break;
             default: Slave::setDouble(vr, value, index);
         }
         
     }
     
     void getContinuousStates(double x[]) override {
-        x[0] = h;
-        x[1] = v;
+        x[0] = m_h;
+        x[1] = m_v;
     }
     
     void setContinuousStates(const double x[]) override {
-        h = x[0];
-        v = x[1];
+        m_h = x[0];
+        m_v = x[1];
     }
     
     void getDerivatives(double dx[]) override {
-        dx[0] = v;
-        dx[1] = g;
+        dx[0] = m_v;
+        dx[1] = m_g;
     }
     
     void getEventIndicators(double z[]) override {
-        z[0] = h;
+        z[0] = m_h;
     }
     
     void initialize() override {
                 
         // set start values
-        h =  1;
-        v =  0;
-        g = -9.81;
-        e =  0.7;
+        m_h =  1;
+        m_v =  0;
+        m_g = -9.81;
+        m_e =  0.7;
         
         Slave::initialize();
     }
     
     void update(bool *continuousStatesChanged, double *nextEventTime) override {
         
-        if (h <= 0) {
+        if (m_h <= 0) {
             
-            h = 0;
-            v = std::abs(v * e);
+            m_h = 0;
+            m_v = std::abs(m_v * m_e);
             
-            if (v <= 1e-3) {
+            if (m_v <= 1e-3) {
                 // stop bouncing
-                v = 0;
-                g = 0;
+                m_v = 0;
+                m_g = 0;
             }
             
             *continuousStatesChanged = true;
@@ -101,15 +102,16 @@ public:
     }
     
     void* getFMUState() override {
-        return new FMUState { h, v, g, e };
+        return new FMUState { m_state, m_h, m_v, m_g, m_e };
     }
     
     void setFMUState(void *fmuState) override {
         auto s = reinterpret_cast<FMUState*>(fmuState);
-        h = s->h;
-        v = s->v;
-        g = s->g;
-        e = s->e;
+        m_state = s->state;
+        m_h = s->h;
+        m_v = s->v;
+        m_g = s->g;
+        m_e = s->e;
     }
     
     size_t getSerializedFMUStateSize(void* fmuState) override {
