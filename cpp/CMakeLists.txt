@@ -24,7 +24,7 @@ else ()
     set (FMI_PLATFORM ${FMI_PLATFORM}32)
 endif ()
 
-set(MODEL_NAMES BouncingBall Stair VariableTypes)
+set(MODEL_NAMES BouncingBall Stair VariableTypes VanDerPol)
 
 if (${FMI_VERSION} STREQUAL "3")
     list(APPEND MODEL_NAMES Arrays)
