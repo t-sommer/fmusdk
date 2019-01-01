@@ -22,27 +22,22 @@ private:
     double m_x1;
     double m_dx1;
     double m_mu;
-
-    struct FMUState {
-        State state;
-        double x0, dx0, x1, dx1, mu;
-    };
     
 public:    
     int getNumberOfContinuousStates() override { return 2; }
     int getNumberOfEventIndicators() override { return 0; }
 
-    std::vector<double> getDouble(int vr) override {
-        
+    void getDouble(int vr, double value[], int* index) override {
+
         calculateDerivatives();
         
         switch (vr) {
-            case vr_x0:  return { m_x0 };
-            case vr_dx0: return { m_dx0 };
-            case vr_x1:  return { m_x1 };
-            case vr_dx1: return { m_dx1 };
-            case vr_mu:  return { m_mu };
-            default:     return Slave::getDouble(vr);
+            case vr_x0:  value[(*index)++] = m_x0;  break;
+            case vr_dx0: value[(*index)++] = m_dx0; break;
+            case vr_x1:  value[(*index)++] = m_x1;  break;
+            case vr_dx1: value[(*index)++] = m_dx1; break;
+            case vr_mu:  value[(*index)++] = m_mu;  break;
+            default: Slave::getDouble(vr, value, index);
         }
         
     }
@@ -50,11 +45,11 @@ public:
     void setDouble(int vr, const double* value, int* index) override {
         
         switch (vr) {
-            case vr_x0:  m_x0  = value[*index++]; break;
-            case vr_dx0: m_dx0 = value[*index++]; break;
-            case vr_x1:  m_x1  = value[*index++]; break;
-            case vr_dx1: m_dx1 = value[*index++]; break;
-            case vr_mu:  m_mu  = value[*index++]; break;
+            case vr_x0:  m_x0  = value[(*index)++]; break;
+            case vr_dx0: m_dx0 = value[(*index)++]; break;
+            case vr_x1:  m_x1  = value[(*index)++]; break;
+            case vr_dx1: m_dx1 = value[(*index)++]; break;
+            case vr_mu:  m_mu  = value[(*index)++]; break;
             default: Slave::setDouble(vr, value, index);
         }
         

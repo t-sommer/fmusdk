@@ -51,6 +51,8 @@
 
 enum State : int;
 
+typedef int boolean;
+
 
 class Model {
     
@@ -67,22 +69,22 @@ public:
     virtual int getNumberOfContinuousStates() = 0;
     virtual int getNumberOfEventIndicators() = 0;
     
-    virtual std::vector<double> getDouble(int vr);
-    virtual std::vector<float> getFloat(int vr);
-    virtual std::vector<int8_t> getInt8(int vr);
-    virtual std::vector<uint8_t> getUInt8(int vr);
-    virtual std::vector<int16_t> getInt16(int vr);
-    virtual std::vector<uint16_t> getUInt16(int vr);
-    virtual std::vector<int32_t> getInt32(int vr);
-    virtual std::vector<uint32_t> getUInt32(int vr);
-    virtual std::vector<int64_t> getInt64(int vr);
-    virtual std::vector<uint64_t> getUInt64(int vr);
-    virtual std::vector<bool> getBool(int vr);
-    virtual std::vector<const std::string*> getString(int vr);
+    virtual void getDouble(int vr, double value[], int* index);
+    virtual void getFloat(int vr, float value[], int* index);
+    virtual void getInt8(int vr, int8_t value[], int* index);
+    virtual void getUInt8(int vr, uint8_t value[], int* index);
+    virtual void getInt16(int vr, int16_t value[], int* index);
+    virtual void getUInt16(int vr, uint16_t value[], int* index);
+    virtual void getInt32(int vr, int32_t value[], int* index);
+    virtual void getUInt32(int vr, uint32_t value[], int* index);
+    virtual void getInt64(int vr, int64_t value[], int* index);
+    virtual void getUInt64(int vr, uint64_t value[], int* index);
+    virtual void getBoolean(int vr, boolean value[], int* index);
+    virtual void getString(int vr, const char* value[], int* index);
     virtual void setDouble(int vr, const double value[], int* index);
     virtual void setInt32(int vr, const int32_t value[], int* index);
     virtual void setUInt64(int vr, uint64_t value);
-    virtual void setBool(int vr, const bool value[], int* index);
+    virtual void setBoolean(int vr, const boolean value[], int* index);
     virtual void setString(int vr, const std::string& value);
     virtual void getContinuousStates(double x[]) {}
     virtual void setContinuousStates(const double x[]) {}

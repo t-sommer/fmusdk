@@ -46,140 +46,140 @@ private:
     uint32_t m_uint32;
     int64_t m_int64;
     uint64_t m_uint64;
-    bool m_bool;
+    boolean m_bool;
     
 public:
     int getNumberOfContinuousStates() override { return 0; }
     int getNumberOfEventIndicators() override { return 0; }
 
-    std::vector<double> getDouble(int vr) override {
+    void getDouble(int vr, double* value, int* index) override {
         
         switch (vr) {
             case vr_double_in:
             case vr_double_out:
-                return { m_double };
+                value[(*index)++] = m_double; break;
             default:
-                return Model::getDouble(vr);
+                Slave::getDouble(vr, value, index);
         }
         
     }
     
-    std::vector<float> getFloat(int vr) override {
+    void getFloat(int vr, float* value, int* index) override {
         
         switch (vr) {
             case vr_float32_in:
             case vr_float32_out:
-                return { m_float32 };
+                value[(*index)++] = m_float32; break;
             default:
-                return Model::getFloat(vr);
+                Slave::getFloat(vr, value, index);
         }
         
     }
     
-    std::vector<int8_t> getInt8(int vr) override {
+    void getInt8(int vr, int8_t* value, int* index) override {
         
         switch (vr) {
             case vr_int8_in:
             case vr_int8_out:
-                return { m_int8 };
+                value[(*index)++] = m_int8; break;
             default:
-                return Model::getInt8(vr);
+                Slave::getInt8(vr, value, index);
         }
         
     }
     
-    std::vector<uint8_t> getUInt8(int vr) override {
+    void getUInt8(int vr, uint8_t* value, int* index) override {
         
         switch (vr) {
             case vr_uint8_in:
             case vr_uint8_out:
-                return { m_uint8 };
+                value[(*index)++] = m_uint8; break;
             default:
-                return Model::getUInt8(vr);
+                Slave::getUInt8(vr, value, index);
         }
         
     }
     
-    std::vector<int16_t> getInt16(int vr) override {
+    void getInt16(int vr, int16_t* value, int* index) override {
         
         switch (vr) {
             case vr_int16_in:
             case vr_int16_out:
-                return { m_int16 };
+                value[(*index)++] = m_int16; break;
             default:
-                return Model::getInt16(vr);
+                Slave::getInt16(vr, value, index);
         }
         
     }
     
-    std::vector<uint16_t> getUInt16(int vr) override {
+    void getUInt16(int vr, uint16_t* value, int* index) override {
         
         switch (vr) {
             case vr_uint16_in:
             case vr_uint16_out:
-                return { m_uint16 };
+                value[(*index)++] = m_uint16; break;
             default:
-                return Model::getUInt16(vr);
+                Slave::getUInt16(vr, value, index);
         }
         
     }
     
-    std::vector<int32_t> getInt32(int vr) override {
+    void getInt32(int vr, int32_t* value, int* index) override {
         
         switch (vr) {
             case vr_int32_in:
             case vr_int32_out:
-                return { m_int32 };
+                value[(*index)++] = m_int32; break;
             default:
-                return Model::getInt32(vr);
+                Slave::getInt32(vr, value, index);
         }
         
     }
     
-    std::vector<uint32_t> getUInt32(int vr) override {
+    void getUInt32(int vr, uint32_t* value, int* index) override {
         
         switch (vr) {
             case vr_uint32_in:
             case vr_uint32_out:
-                return { m_uint32 };
+                value[(*index)++] = m_uint32; break;
             default:
-                return Model::getUInt32(vr);
+                Slave::getUInt32(vr, value, index);
         }
         
     }
-    
-    std::vector<int64_t> getInt64(int vr) override {
+
+    void getInt64(int vr, int64_t* value, int* index) override {
         
         switch (vr) {
             case vr_int64_in:
             case vr_int64_out:
-                return { m_int64 };
+                value[(*index)++] = m_int64; break;
             default:
-                return Model::getInt64(vr);
+                Slave::getInt64(vr, value, index);
         }
         
     }
     
-    std::vector<uint64_t> getUInt64(int vr) override {
+    void getUInt64(int vr, uint64_t* value, int* index) override {
         
         switch (vr) {
             case vr_uint64_in:
             case vr_uint64_out:
-                return { m_uint64 };
+                value[(*index)++] = m_uint64; break;
             default:
-                return Model::getUInt64(vr);
+                Slave::getUInt64(vr, value, index);
         }
         
     }
-    
-    std::vector<bool> getBool(int vr) override {
+
+    void getBoolean(int vr, boolean* value, int* index) override {
         
         switch (vr) {
             case vr_bool_in:
             case vr_bool_out:
-                return { m_bool };
+                value[(*index)++] = m_bool; break;
             default:
-                return Model::getBool(vr);
+                Slave::getBoolean(vr, value, index);
         }
         
     }
@@ -223,7 +223,7 @@ public:
         
     }
     
-    void setBool(int vr, const bool value[], int* index) override {
+    void setBoolean(int vr, const boolean value[], int* index) override {
         
         switch (vr) {
             case vr_bool_in:
@@ -231,7 +231,7 @@ public:
                 m_bool = value[*index++];
                 break;
             default:
-                Model::setBool(vr, value, index);
+                Model::setBoolean(vr, value, index);
         }
         
     }

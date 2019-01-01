@@ -76,6 +76,28 @@ fmi2Status get_v(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, T v
 }
 
 template<class T>
+fmi2Status get_v2(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, T value[], size_t nValues, void (Model::*getter)(int, T*, int*)) {
+    
+    try {
+        int i = 0;
+        
+        for (int j = 0; j < nvr; j++) {
+            
+            if (i >= nValues) {
+                // TODO: log error message
+                return fmi2Error;
+            }
+            
+            (INSTANCE->*getter)(vr[j], value, &i);
+        }
+    } catch (std::exception const &e) {
+        return fmi2Error;
+    }
+    
+    return fmi2OK;
+}
+
+template<class T>
 fmi2Status set_v(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const T value[], void (Model::*setter)(int, const T*, int*)) {
     
     try {
@@ -83,13 +105,13 @@ fmi2Status set_v(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, con
         
         for (int j = 0; j < nvr; j++) {
             
-            (INSTANCE->*setter)(vr[j], value, &i);
-            
+            // TODO: pass nValues
             if (i >= nvr) {
                 // TODO: log error message
                 return fmi2Error;
             }
             
+            (INSTANCE->*setter)(vr[j], value, &i);
         }
     } catch (std::exception const &e) {
         return fmi2Error;
@@ -318,44 +340,22 @@ fmi2Status fmi2SetDebugLogging(fmi2Component c, fmi2Boolean loggingOn, size_t nC
 
 fmi2Status fmi2GetReal(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Real value[]) {
     ASSERT_STATE(fmi2GetReal)
-    return get_v(c, vr, nvr, value, nvr, &Model::getDouble);
+    return get_v2(c, vr, nvr, value, nvr, &Model::getDouble);
 }
 
 fmi2Status fmi2GetInteger(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Integer value[]) {
     ASSERT_STATE(fmi2GetInteger)
-    return get_v(c, vr, nvr, value, nvr, &Model::getInt32);
+    return get_v2(c, vr, nvr, value, nvr, &Model::getInt32);
 }
 
 fmi2Status fmi2GetBoolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Boolean value[]) {
-    
     ASSERT_STATE(fmi2GetBoolean)
-    
-    try {
-        for (int i = 0; i < nvr; i++) {
-            auto values = INSTANCE->getBool(vr[i]);
-            value[i] = values[0];
-        }
-    } catch (std::exception const &e) {
-        return fmi2Error;
-    }
-
-    return fmi2OK;
+    return get_v2(c, vr, nvr, value, nvr, &Model::getBoolean);
 }
 
 fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2String value[]) {
-    
     ASSERT_STATE(fmi2GetString)
-    
-    try {
-        for (int i = 0; i < nvr; i++) {
-            auto values = INSTANCE->getString(vr[i]);
-            value[i] = values[0]->c_str();
-        }
-    } catch (std::exception const &e) {
-        return fmi2Error;
-    }
-
-    return fmi2OK;
+    return get_v2(c, vr, nvr, value, nvr, &Model::getString);
 }
 
 fmi2Status fmi2SetReal(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Real value[]) {
@@ -369,20 +369,8 @@ fmi2Status fmi2SetInteger(fmi2Component c, const fmi2ValueReference vr[], size_t
 }
 
 fmi2Status fmi2SetBoolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Boolean value[]) {
-    
     ASSERT_STATE(fmi2SetBoolean)
-    
-    try {
-        for (int j = 0; j < nvr; j++) {
-            bool bool_value = value[j] != fmi2False;
-            int i = 0;
-            INSTANCE->setBool(vr[j], &bool_value, &i);
-        }
-    } catch (std::exception const &e) {
-        return fmi2Error;
-    }
-    
-    return fmi2OK;
+    return set_v(c, vr, nvr, value, &Model::setBoolean);
 }
 
 fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2String value[]) {

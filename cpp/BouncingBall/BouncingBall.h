@@ -4,6 +4,7 @@
 #include "Slave.h"
 #include <cmath>  // for std::abs
 
+
 class BouncingBall : public Slave {
     
 private:
@@ -30,14 +31,14 @@ public:
     int getNumberOfContinuousStates() override { return 2; }
     int getNumberOfEventIndicators() override { return 1; }
 
-    std::vector<double> getDouble(int vr) override {
-        
+    void getDouble(int vr, double* value, int* index) override {
+
         switch (vr) {
-            case vr_h: return { m_h };
-            case vr_v: return { m_v };
-            case vr_g: return { m_g };
-            case vr_e: return { m_e };
-            default:   return Slave::getDouble(vr);
+            case vr_h: value[(*index)++] = m_h;  break;
+            case vr_v: value[(*index)++] = m_v;  break;
+            case vr_g: value[(*index)++] = m_g;  break;
+            case vr_e: value[(*index)++] = m_e;  break;
+            default: Slave::getDouble(vr, value, index);
         }
         
     }

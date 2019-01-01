@@ -21,13 +21,13 @@ public:
     int getNumberOfContinuousStates() override { return 0; }
     int getNumberOfEventIndicators() override { return 0; }
 
-    std::vector<double> getDouble(int vr) override {
+    void getDouble(int vr, double* value, int* index) override {
         
         switch (vr) {
             case vr_y:
-                return { y };
+                value[(*index)++] = y; break;
             default:
-                return Slave::getDouble(vr);
+                return Slave::getDouble(vr, value, index);
         }
         
     }
