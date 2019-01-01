@@ -1,71 +1,56 @@
-/* ---------------------------------------------------------------------------*
- * Sample implementation of an FMU - the Dahlquist test equation.
- *
- *   der(x) = - k * x and x(0) = 1. 
- *   Analytical solution: x(t) = exp(-k*t).
- * Copyright QTronic GmbH. All rights reserved.
- * ---------------------------------------------------------------------------*/
-
-// define class name and unique id
-#define MODEL_IDENTIFIER dq
-#define MODEL_GUID "{8c4e810f-3df3-4a00-8276-176fa3c9f000}"
-
-// define model size
-#define NUMBER_OF_REALS 3
-#define NUMBER_OF_INTEGERS 0
-#define NUMBER_OF_BOOLEANS 0
-#define NUMBER_OF_STRINGS 0
-#define NUMBER_OF_STATES 1
-#define NUMBER_OF_EVENT_INDICATORS 0
+#include "config.h"
 
 // include fmu header files, typedefs and macros
-#include "fmuTemplate.h"
+#include "model.h"
 
-// define all model variables and their value references
-// conventions used here:
-// - if x is a variable, then macro x_ is its variable reference
-// - the vr of a variable is its index in array  r, i, b or s
-// - if k is the vr of a real state, then k+1 is the vr of its derivative
-#define x_     0
-#define der_x_ 1
-#define k_     2
 
-// define state vector as vector of value references
-#define STATES { x_ }
+// shorthand to access the variables
+#define M(v) (comp->modelData->v)
 
-// called by fmi2Instantiate
-// Set values for all variables that define a start value
-// Settings used unless changed by fmi2SetX before fmi2EnterInitializationMode
+
 void setStartValues(ModelInstance *comp) {
-    r(x_) = 1;
-    r(k_) = 1;
+    M(x) = 1;
+    M(k) = 1;
 }
 
-// called by fmi2GetReal, fmi2GetInteger, fmi2GetBoolean, fmi2GetString, fmi2ExitInitialization
-// if setStartValues or environment set new values through fmi2SetXXX.
-// Lazy set values for all variable that are computed from other variables.
 void calculateValues(ModelInstance *comp) {
-    //if (comp->state == modelInitializationMode) {
-    //  initialization code here
-    //  set first time event, if any, using comp->eventInfo.nextEventTime
-    //}
+    M(der_x) = -M(k) * M(x);
 }
 
-// called by fmi2GetReal, fmi2GetContinuousStates and fmi2GetDerivatives
-fmi2Real getReal(ModelInstance* comp, fmi2ValueReference vr){
+Status getReal(ModelInstance* comp, ValueReference vr, double *value) {
+    calculateValues(comp);
     switch (vr) {
-        case x_     : return r(x_);
-        case der_x_ : return - r(k_) * r(x_);
-        case k_     : return r(k_);
-        default: return 0;
+        case vr_x    : *value = M(x);     return OK;
+        case vr_der_x: *value = M(der_x); return OK;
+        case vr_k    : *value = M(k);     return OK;
+        default: return Error;
     }
 }
 
-// used to set the next time event, if any.
-void eventUpdate(ModelInstance *comp, fmi2EventInfo *eventInfo, int isTimeEvent, int isNewEventIteration) {
-} 
+Status setReal(ModelInstance* comp, ValueReference vr, double value) {
+    switch (vr) {
+        case vr_x: M(x) = value; return OK;
+        case vr_k: M(k) = value; return OK;
+        default: return Error;
+    }
+}
 
-// include code that implements the FMI based on the above definitions
-#include "fmuTemplate.c"
+void getContinuousStates(ModelInstance *comp, double x[], size_t nx) {
+    x[0] = M(x);
+}
 
+void setContinuousStates(ModelInstance *comp, const double x[], size_t nx) {
+    M(x) = x[0];
+}
 
+void getDerivatives(ModelInstance *comp, double dx[], size_t nx) {
+    calculateValues(comp);
+    dx[0] = M(der_x);
+}
+
+void eventUpdate(ModelInstance *comp) {
+    comp->valuesOfContinuousStatesChanged   = FALSE;
+    comp->nominalsOfContinuousStatesChanged = FALSE;
+    comp->terminateSimulation               = FALSE;
+    comp->nextEventTimeDefined              = FALSE;
+}

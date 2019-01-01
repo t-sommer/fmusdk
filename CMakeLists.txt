@@ -23,19 +23,35 @@ endif ()
 
 MESSAGE("FMI_PLATFORM: " ${FMI_PLATFORM})
 
-foreach (FMI_VERSION 10 20)
-foreach (FMI_TYPE cs me)
-foreach (MODEL_NAME bouncingBall dq inc values vanDerPol)
+foreach (FMI_VERSION 20)
+foreach (FMI_TYPE cs)
+foreach (MODEL_NAME bouncingBall) # dq inc values vanDerPol)
 
 set(TARGET_NAME ${MODEL_NAME}_${FMI_VERSION}_${FMI_TYPE})
 
-add_library(${TARGET_NAME} SHARED fmu${FMI_VERSION}/src/models/${MODEL_NAME}/${MODEL_NAME}.c)
+SET(HEADERS
+  fmu20/src/models/fmuTemplate.h
+  fmu20/src/models/solver.h
+  fmu20/src/models/${MODEL_NAME}/config.h
+)
+
+add_library(${TARGET_NAME} SHARED
+  ${HEADERS}
+  fmu20/src/models/slave.c
+  fmu20/src/models/fmuTemplate.c
+  fmu20/src/models/ForwardEuler.c
+  fmu${FMI_VERSION}/src/models/${MODEL_NAME}/${MODEL_NAME}.c
+  fmu${FMI_VERSION}/src/models/${MODEL_NAME}/modelDescription.xml
+)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dist/fmi${FMI_VERSION}/${FMI_TYPE})
 
 target_compile_definitions(${TARGET_NAME} PRIVATE DISABLE_PREFIX)
 
-target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/fmu${FMI_VERSION}/src/models")
+target_include_directories(${TARGET_NAME} PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/fmu${FMI_VERSION}/src/models"
+  "${CMAKE_CURRENT_SOURCE_DIR}/fmu${FMI_VERSION}/src/models/${MODEL_NAME}"
+)
 
 if (${FMI_VERSION} EQUAL 10)
   if (${FMI_TYPE} STREQUAL "cs")
@@ -79,7 +95,7 @@ cat(${CMAKE_CURRENT_SOURCE_DIR}/fmu10/src/models/${FMI_TYPE}.xml ${FMU_BUILD_DIR
 else()
 
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-  ${CMAKE_CURRENT_SOURCE_DIR}/fmu20/src/models/${MODEL_NAME}/modelDescription_${FMI_TYPE}.xml
+  ${CMAKE_CURRENT_SOURCE_DIR}/fmu20/src/models/${MODEL_NAME}/modelDescription.xml
   "${FMU_BUILD_DIR}/modelDescription.xml"
 )
 

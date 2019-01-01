@@ -23,22 +23,33 @@
  * Copyright QTronic GmbH. All rights reserved.
  * ---------------------------------------------------------------------------*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
 
-// macro to be used to log messages. The macro check if current 
+#include "config.h"
+#include "model.h"
+#include "solver.h"
+#include "slave.h"
+
+
+// C-code FMUs have functions names prefixed with MODEL_IDENTIFIER_.
+// Define DISABLE_PREFIX to build a binary FMU.
+#ifndef DISABLE_PREFIX
+#define pasteA(a,b)     a ## b
+#define pasteB(a,b)    pasteA(a,b)
+#define FMI2_FUNCTION_PREFIX pasteB(MODEL_IDENTIFIER, _)
+#endif
+#include "fmi2Functions.h"
+
+
+// macro to be used to log messages. The macro check if current
 // log category is valid and, if true, call the logger provided by simulator.
 #define FILTERED_LOG(instance, status, categoryIndex, message, ...) if (status == fmi2Error || status == fmi2Fatal || isCategoryLogged(instance, categoryIndex)) \
-        instance->functions->logger(instance->functions->componentEnvironment, instance->instanceName, status, \
+        instance->logger(instance->componentEnvironment, instance->instanceName, status, \
         logCategoriesNames[categoryIndex], message, ##__VA_ARGS__);
 
-static fmi2String logCategoriesNames[] = {"logAll", "logError", "logFmiCall", "logEvent"};
-
-// array of value references of states
-#if NUMBER_OF_STATES>0
-fmi2ValueReference vrStates[NUMBER_OF_STATES] = STATES;
-#endif
+static const char *logCategoriesNames[] = {"logAll", "logError", "logFmiCall", "logEvent"};
 
 #ifndef max
 #define max(a,b) ((a)>(b) ? (a) : (b))
@@ -49,12 +60,96 @@ fmi2ValueReference vrStates[NUMBER_OF_STATES] = STATES;
 #endif
 
 // ---------------------------------------------------------------------------
+// Function calls allowed state masks for both Model-exchange and Co-simulation
+// ---------------------------------------------------------------------------
+#define MASK_fmi2GetTypesPlatform        (modelStartAndEnd | modelInstantiated | modelInitializationMode \
+| modelEventMode | modelContinuousTimeMode \
+| modelStepComplete | modelStepInProgress | modelStepFailed | modelStepCanceled \
+| modelTerminated | modelError)
+#define MASK_fmi2GetVersion              MASK_fmi2GetTypesPlatform
+#define MASK_fmi2SetDebugLogging         (modelInstantiated | modelInitializationMode \
+| modelEventMode | modelContinuousTimeMode \
+| modelStepComplete | modelStepInProgress | modelStepFailed | modelStepCanceled \
+| modelTerminated | modelError)
+#define MASK_fmi2Instantiate             (modelStartAndEnd)
+#define MASK_fmi2FreeInstance            (modelInstantiated | modelInitializationMode \
+| modelEventMode | modelContinuousTimeMode \
+| modelStepComplete | modelStepFailed | modelStepCanceled \
+| modelTerminated | modelError)
+#define MASK_fmi2SetupExperiment         modelInstantiated
+#define MASK_fmi2EnterInitializationMode modelInstantiated
+#define MASK_fmi2ExitInitializationMode  modelInitializationMode
+#define MASK_fmi2Terminate               (modelEventMode | modelContinuousTimeMode \
+| modelStepComplete | modelStepFailed)
+#define MASK_fmi2Reset                   MASK_fmi2FreeInstance
+#define MASK_fmi2GetReal                 (modelInitializationMode \
+| modelEventMode | modelContinuousTimeMode \
+| modelStepComplete | modelStepFailed | modelStepCanceled \
+| modelTerminated | modelError)
+#define MASK_fmi2GetInteger              MASK_fmi2GetReal
+#define MASK_fmi2GetBoolean              MASK_fmi2GetReal
+#define MASK_fmi2GetString               MASK_fmi2GetReal
+#define MASK_fmi2SetReal                 (modelInstantiated | modelInitializationMode \
+| modelEventMode | modelContinuousTimeMode \
+| modelStepComplete)
+#define MASK_fmi2SetInteger              (modelInstantiated | modelInitializationMode \
+| modelEventMode \
+| modelStepComplete)
+#define MASK_fmi2SetBoolean              MASK_fmi2SetInteger
+#define MASK_fmi2SetString               MASK_fmi2SetInteger
+#define MASK_fmi2GetFMUstate             MASK_fmi2FreeInstance
+#define MASK_fmi2SetFMUstate             MASK_fmi2FreeInstance
+#define MASK_fmi2FreeFMUstate            MASK_fmi2FreeInstance
+#define MASK_fmi2SerializedFMUstateSize  MASK_fmi2FreeInstance
+#define MASK_fmi2SerializeFMUstate       MASK_fmi2FreeInstance
+#define MASK_fmi2DeSerializeFMUstate     MASK_fmi2FreeInstance
+#define MASK_fmi2GetDirectionalDerivative (modelInitializationMode \
+| modelEventMode | modelContinuousTimeMode \
+| modelStepComplete | modelStepFailed | modelStepCanceled \
+| modelTerminated | modelError)
+
+// ---------------------------------------------------------------------------
+// Function calls allowed state masks for Model-exchange
+// ---------------------------------------------------------------------------
+#define MASK_fmi2EnterEventMode          (modelEventMode | modelContinuousTimeMode)
+#define MASK_fmi2NewDiscreteStates       modelEventMode
+#define MASK_fmi2EnterContinuousTimeMode modelEventMode
+#define MASK_fmi2CompletedIntegratorStep modelContinuousTimeMode
+#define MASK_fmi2SetTime                 (modelEventMode | modelContinuousTimeMode)
+#define MASK_fmi2SetContinuousStates     modelContinuousTimeMode
+#define MASK_fmi2GetEventIndicators      (modelInitializationMode \
+| modelEventMode | modelContinuousTimeMode \
+| modelTerminated | modelError)
+#define MASK_fmi2GetContinuousStates     MASK_fmi2GetEventIndicators
+#define MASK_fmi2GetDerivatives          (modelEventMode | modelContinuousTimeMode \
+| modelTerminated | modelError)
+#define MASK_fmi2GetNominalsOfContinuousStates ( modelInstantiated \
+| modelEventMode | modelContinuousTimeMode \
+| modelTerminated | modelError)
+
+// ---------------------------------------------------------------------------
+// Function calls allowed state masks for Co-simulation
+// ---------------------------------------------------------------------------
+#define MASK_fmi2SetRealInputDerivatives (modelInstantiated | modelInitializationMode \
+| modelStepComplete)
+#define MASK_fmi2GetRealOutputDerivatives (modelStepComplete | modelStepFailed | modelStepCanceled \
+| modelTerminated | modelError)
+#define MASK_fmi2DoStep                  modelStepComplete
+#define MASK_fmi2CancelStep              modelStepInProgress
+#define MASK_fmi2GetStatus               (modelStepComplete | modelStepInProgress | modelStepFailed \
+| modelTerminated)
+#define MASK_fmi2GetRealStatus           MASK_fmi2GetStatus
+#define MASK_fmi2GetIntegerStatus        MASK_fmi2GetStatus
+#define MASK_fmi2GetBooleanStatus        MASK_fmi2GetStatus
+#define MASK_fmi2GetStringStatus         MASK_fmi2GetStatus
+
+// ---------------------------------------------------------------------------
 // Private helpers used below to validate function arguments
 // ---------------------------------------------------------------------------
 
-fmi2Boolean isCategoryLogged(ModelInstance *comp, int categoryIndex);
+boolean isCategoryLogged(ModelInstance *comp, int categoryIndex);
 
-static fmi2Boolean invalidNumber(ModelInstance *comp, const char *f, const char *arg, int n, int nExpected) {
+static boolean invalidNumber(ModelInstance *comp, const char *f, const char *arg, int n, int nExpected) {
     if (n != nExpected) {
         comp->state = modelError;
         FILTERED_LOG(comp, fmi2Error, LOG_ERROR, "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected)
@@ -83,23 +178,19 @@ static fmi2Boolean nullPointer(ModelInstance* comp, const char *f, const char *a
     return fmi2False;
 }
 
-static fmi2Boolean vrOutOfRange(ModelInstance *comp, const char *f, fmi2ValueReference vr, int end) {
-    if (vr >= end) {
-        FILTERED_LOG(comp, fmi2Error, LOG_ERROR, "%s: Illegal value reference %u.", f, vr)
-        comp->state = modelError;
-        return fmi2True;
-    }
-    return fmi2False;
-}
-
 static fmi2Status unsupportedFunction(fmi2Component c, const char *fName, int statesExpected) {
     ModelInstance *comp = (ModelInstance *)c;
-    fmi2CallbackLogger log = comp->functions->logger;
+    //fmi2CallbackLogger log = comp->functions->logger;
     if (invalidState(comp, fName, statesExpected))
         return fmi2Error;
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, fName);
     FILTERED_LOG(comp, fmi2Error, LOG_ERROR, "%s: Function not implemented.", fName)
     return fmi2Error;
+}
+
+static void notImplemented(ModelInstance* comp, const char *f) {
+    comp->state = modelError;
+    FILTERED_LOG(comp, fmi2Error, LOG_ERROR, "Function %s is not implemented", f)
 }
 
 fmi2Status setString(fmi2Component comp, fmi2ValueReference vr, fmi2String value) {
@@ -154,22 +245,17 @@ fmi2Component fmi2Instantiate(fmi2String instanceName, fmi2Type fmuType, fmi2Str
     comp = (ModelInstance *)functions->allocateMemory(1, sizeof(ModelInstance));
     if (comp) {
         int i;
-        comp->r = (fmi2Real *)   functions->allocateMemory(NUMBER_OF_REALS,    sizeof(fmi2Real));
-        comp->i = (fmi2Integer *)functions->allocateMemory(NUMBER_OF_INTEGERS, sizeof(fmi2Integer));
-        comp->b = (fmi2Boolean *)functions->allocateMemory(NUMBER_OF_BOOLEANS, sizeof(fmi2Boolean));
-        comp->s = (fmi2String *) functions->allocateMemory(NUMBER_OF_STRINGS,  sizeof(fmi2String));
-        comp->isPositive = (fmi2Boolean *)functions->allocateMemory(NUMBER_OF_EVENT_INDICATORS,
-            sizeof(fmi2Boolean));
         comp->instanceName = (char *)functions->allocateMemory(1 + strlen(instanceName), sizeof(char));
         comp->GUID = (char *)functions->allocateMemory(1 + strlen(fmuGUID), sizeof(char));
+
+        comp->modelData = (ModelData *)functions->allocateMemory(1, sizeof(ModelData));
 
         // set all categories to on or off. fmi2SetDebugLogging should be called to choose specific categories.
         for (i = 0; i < NUMBER_OF_CATEGORIES; i++) {
             comp->logCategories[i] = loggingOn;
         }
     }
-    if (!comp || !comp->r || !comp->i || !comp->b || !comp->s || !comp->isPositive
-        || !comp->instanceName || !comp->GUID) {
+    if (!comp || !comp->modelData || !comp->instanceName || !comp->GUID) {
 
         functions->logger(functions->componentEnvironment, instanceName, fmi2Error, "error",
             "fmi2Instantiate: Out of memory.");
@@ -179,20 +265,26 @@ fmi2Component fmi2Instantiate(fmi2String instanceName, fmi2Type fmuType, fmi2Str
     strcpy((char *)comp->instanceName, (char *)instanceName);
     comp->type = fmuType;
     strcpy((char *)comp->GUID, (char *)fmuGUID);
-    comp->functions = functions;
+    comp->logger = functions->logger;
+    comp->allocateMemory = functions->allocateMemory;
+    comp->freeMemory = functions->freeMemory;
+    comp->stepFinished = functions->stepFinished;
     comp->componentEnvironment = functions->componentEnvironment;
     comp->loggingOn = loggingOn;
     comp->state = modelInstantiated;
-    setStartValues(comp); // to be implemented by the includer of this file
-    comp->isDirtyValues = fmi2True; // because we just called setStartValues
     comp->isNewEventIteration = fmi2False;
 
-    comp->eventInfo.newDiscreteStatesNeeded = fmi2False;
-    comp->eventInfo.terminateSimulation = fmi2False;
-    comp->eventInfo.nominalsOfContinuousStatesChanged = fmi2False;
-    comp->eventInfo.valuesOfContinuousStatesChanged = fmi2False;
-    comp->eventInfo.nextEventTimeDefined = fmi2False;
-    comp->eventInfo.nextEventTime = 0;
+    comp->newDiscreteStatesNeeded = fmi2False;
+    comp->terminateSimulation = fmi2False;
+    comp->nominalsOfContinuousStatesChanged = fmi2False;
+    comp->valuesOfContinuousStatesChanged = fmi2False;
+    comp->nextEventTimeDefined = fmi2False;
+    comp->nextEventTime = 0;
+
+    setStartValues(comp); // to be implemented by the includer of this file
+    comp->isDirtyValues = fmi2True; // because we just called setStartValues
+    
+    comp->solverData = solver_create(comp);
 
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2Instantiate: GUID=%s", fmuGUID)
 
@@ -204,12 +296,15 @@ fmi2Status fmi2SetupExperiment(fmi2Component c, fmi2Boolean toleranceDefined, fm
 
     // ignore arguments: stopTimeDefined, stopTime
     ModelInstance *comp = (ModelInstance *)c;
+    
     if (invalidState(comp, "fmi2SetupExperiment", MASK_fmi2SetupExperiment))
         return fmi2Error;
+    
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetupExperiment: toleranceDefined=%d tolerance=%g",
         toleranceDefined, tolerance)
 
     comp->time = startTime;
+    
     return fmi2OK;
 }
 
@@ -267,26 +362,19 @@ fmi2Status fmi2Reset(fmi2Component c) {
 }
 
 void fmi2FreeInstance(fmi2Component c) {
+
     ModelInstance *comp = (ModelInstance *)c;
+
     if (!comp) return;
+
     if (invalidState(comp, "fmi2FreeInstance", MASK_fmi2FreeInstance))
         return;
+
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2FreeInstance")
 
-    if (comp->r) comp->functions->freeMemory(comp->r);
-    if (comp->i) comp->functions->freeMemory(comp->i);
-    if (comp->b) comp->functions->freeMemory(comp->b);
-    if (comp->s) {
-        int i;
-        for (i = 0; i < NUMBER_OF_STRINGS; i++){
-            if (comp->s[i]) comp->functions->freeMemory((void *)comp->s[i]);
-        }
-        comp->functions->freeMemory((void *)comp->s);
-    }
-    if (comp->isPositive) comp->functions->freeMemory(comp->isPositive);
-    if (comp->instanceName) comp->functions->freeMemory((void *)comp->instanceName);
-    if (comp->GUID) comp->functions->freeMemory((void *)comp->GUID);
-    comp->functions->freeMemory(comp);
+    if (comp->instanceName) comp->freeMemory((void *)comp->instanceName);
+    if (comp->GUID) comp->freeMemory((void *)comp->GUID);
+    comp->freeMemory(comp);
 }
 
 // ---------------------------------------------------------------------------
@@ -336,7 +424,7 @@ fmi2Status fmi2SetDebugLogging(fmi2Component c, fmi2Boolean loggingOn, size_t nC
                 }
             }
             if (!categoryFound) {
-                comp->functions->logger(comp->componentEnvironment, comp->instanceName, fmi2Warning,
+                comp->logger(comp->componentEnvironment, comp->instanceName, fmi2Warning,
                     logCategoriesNames[LOG_ERROR],
                     "logging category '%s' is not supported by model", categories[i]);
             }
@@ -346,8 +434,12 @@ fmi2Status fmi2SetDebugLogging(fmi2Component c, fmi2Boolean loggingOn, size_t nC
 }
 
 fmi2Status fmi2GetReal (fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Real value[]) {
-    int i;
+
     ModelInstance *comp = (ModelInstance *)c;
+
+#ifdef GET_REAL
+    int i;
+    Status status = OK;
     if (invalidState(comp, "fmi2GetReal", MASK_fmi2GetReal))
         return fmi2Error;
     if (nvr > 0 && nullPointer(comp, "fmi2GetReal", "vr[]", vr))
@@ -358,60 +450,83 @@ fmi2Status fmi2GetReal (fmi2Component c, const fmi2ValueReference vr[], size_t n
         calculateValues(comp);
         comp->isDirtyValues = fmi2False;
     }
-#if NUMBER_OF_REALS > 0
-    for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(comp, "fmi2GetReal", vr[i], NUMBER_OF_REALS))
-            return fmi2Error;
-        value[i] = getReal(comp, vr[i]); // to be implemented by the includer of this file
 
+    for (i = 0; i < nvr; i++) {
+        status = max(status, getReal(comp, vr[i], &value[i]));
         FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2GetReal: #r%u# = %.16g", vr[i], value[i])
+        if (status > Warning) return status;
     }
+    
+    return status;
+#else
+    notImplemented(comp, "getReal");
+    return fmi2Error; // not implemented
 #endif
-    return fmi2OK;
 }
 
 fmi2Status fmi2GetInteger(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Integer value[]) {
+
     int i;
+    Status status = OK;
+
     ModelInstance *comp = (ModelInstance *)c;
+
     if (invalidState(comp, "fmi2GetInteger", MASK_fmi2GetInteger))
         return fmi2Error;
+
     if (nvr > 0 && nullPointer(comp, "fmi2GetInteger", "vr[]", vr))
             return fmi2Error;
+
     if (nvr > 0 && nullPointer(comp, "fmi2GetInteger", "value[]", value))
             return fmi2Error;
+
     if (nvr > 0 && comp->isDirtyValues) {
         calculateValues(comp);
         comp->isDirtyValues = fmi2False;
     }
+
+#ifdef GET_INTEGER
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(comp, "fmi2GetInteger", vr[i], NUMBER_OF_INTEGERS))
-            return fmi2Error;
-        value[i] = comp->i[vr[i]];
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2GetInteger: #i%u# = %d", vr[i], value[i])
+        status = max(status, getInteger(comp, vr[i], &value[i]));
+        if (status > Warning) return status;
     }
-    return fmi2OK;
+    
+    return status;
+#else
+    return fmi2Error; // not implemented
+#endif
 }
 
 fmi2Status fmi2GetBoolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2Boolean value[]) {
     int i;
+    Status status = OK;
+    
     ModelInstance *comp = (ModelInstance *)c;
+    
     if (invalidState(comp, "fmi2GetBoolean", MASK_fmi2GetBoolean))
         return fmi2Error;
+    
     if (nvr > 0 && nullPointer(comp, "fmi2GetBoolean", "vr[]", vr))
             return fmi2Error;
+    
     if (nvr > 0 && nullPointer(comp, "fmi2GetBoolean", "value[]", value))
             return fmi2Error;
+    
     if (nvr > 0 && comp->isDirtyValues) {
         calculateValues(comp);
         comp->isDirtyValues = fmi2False;
     }
+
+#ifdef GET_BOOLEAN
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(comp, "fmi2GetBoolean", vr[i], NUMBER_OF_BOOLEANS))
-            return fmi2Error;
-        value[i] = comp->b[vr[i]];
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2GetBoolean: #b%u# = %s", vr[i], value[i]? "true" : "false")
+        status = max(status, getBoolean(comp, vr[i], &value[i]));
+        if (status > Warning) return status;
     }
-    return fmi2OK;
+    
+    return status;
+#else
+    return fmi2Error; // not implemented
+#endif
 }
 
 fmi2Status fmi2GetString (fmi2Component c, const fmi2ValueReference vr[], size_t nvr, fmi2String value[]) {
@@ -427,16 +542,22 @@ fmi2Status fmi2GetString (fmi2Component c, const fmi2ValueReference vr[], size_t
         calculateValues(comp);
         comp->isDirtyValues = fmi2False;
     }
+
+#ifdef SET_STRING
     for (i=0; i<nvr; i++) {
         if (vrOutOfRange(comp, "fmi2GetString", vr[i], NUMBER_OF_STRINGS))
             return fmi2Error;
         value[i] = comp->s[vr[i]];
         FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2GetString: #s%u# = '%s'", vr[i], value[i])
     }
+#else
+    return fmi2Error;
+#endif
     return fmi2OK;
 }
 
 fmi2Status fmi2SetReal (fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Real value[]) {
+#ifdef SET_REAL
     int i;
     ModelInstance *comp = (ModelInstance *)c;
     if (invalidState(comp, "fmi2SetReal", MASK_fmi2SetReal))
@@ -446,61 +567,80 @@ fmi2Status fmi2SetReal (fmi2Component c, const fmi2ValueReference vr[], size_t n
     if (nvr > 0 && nullPointer(comp, "fmi2SetReal", "value[]", value))
         return fmi2Error;
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetReal: nvr = %d", nvr)
+
     // no check whether setting the value is allowed in the current state
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(comp, "fmi2SetReal", vr[i], NUMBER_OF_REALS))
-            return fmi2Error;
+        if (setReal(comp, vr[i], value[i]) > Warning) return fmi2Error;
         FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetReal: #r%d# = %.16g", vr[i], value[i])
-        comp->r[vr[i]] = value[i];
     }
+
     if (nvr > 0) comp->isDirtyValues = fmi2True;
     return fmi2OK;
+#else
+    return fmi2Error;
+#endif
 }
 
 fmi2Status fmi2SetInteger(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Integer value[]) {
     int i;
+    Status status = OK;
+    
     ModelInstance *comp = (ModelInstance *)c;
+    
     if (invalidState(comp, "fmi2SetInteger", MASK_fmi2SetInteger))
         return fmi2Error;
+    
     if (nvr > 0 && nullPointer(comp, "fmi2SetInteger", "vr[]", vr))
         return fmi2Error;
+    
     if (nvr > 0 && nullPointer(comp, "fmi2SetInteger", "value[]", value))
         return fmi2Error;
+    
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetInteger: nvr = %d", nvr)
 
+#ifdef SET_INTEGER
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(comp, "fmi2SetInteger", vr[i], NUMBER_OF_INTEGERS))
-            return fmi2Error;
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetInteger: #i%d# = %d", vr[i], value[i])
-        comp->i[vr[i]] = value[i];
+        status = max(status, setInteger(comp, vr[i], value[i]));
+        if (status > Warning) return status;
     }
     if (nvr > 0) comp->isDirtyValues = fmi2True;
-    return fmi2OK;
+    return status;
+#else
+    return fmi2Error;  // not implemented
+#endif
 }
 
 fmi2Status fmi2SetBoolean(fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2Boolean value[]) {
     int i;
+    
     ModelInstance *comp = (ModelInstance *)c;
+    
     if (invalidState(comp, "fmi2SetBoolean", MASK_fmi2SetBoolean))
         return fmi2Error;
+    
     if (nvr>0 && nullPointer(comp, "fmi2SetBoolean", "vr[]", vr))
         return fmi2Error;
+    
     if (nvr>0 && nullPointer(comp, "fmi2SetBoolean", "value[]", value))
         return fmi2Error;
+    
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetBoolean: nvr = %d", nvr)
 
+#ifdef SET_BOOLEAN
     for (i = 0; i < nvr; i++) {
-        if (vrOutOfRange(comp, "fmi2SetBoolean", vr[i], NUMBER_OF_BOOLEANS))
-            return fmi2Error;
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetBoolean: #b%d# = %s", vr[i], value[i] ? "true" : "false")
-        comp->b[vr[i]] = value[i];
+        if (setBoolean(comp, vr[i], value[i]) > Warning) return fmi2Error;
     }
+    
     if (nvr > 0) comp->isDirtyValues = fmi2True;
+    
     return fmi2OK;
+#else
+    return fmi2Error;  // not implemented
+#endif
 }
 
 fmi2Status fmi2SetString (fmi2Component c, const fmi2ValueReference vr[], size_t nvr, const fmi2String value[]) {
-    int i, n;
+    int i;
     ModelInstance *comp = (ModelInstance *)c;
     if (invalidState(comp, "fmi2SetString", MASK_fmi2SetString))
         return fmi2Error;
@@ -510,6 +650,7 @@ fmi2Status fmi2SetString (fmi2Component c, const fmi2ValueReference vr[], size_t
         return fmi2Error;
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetString: nvr = %d", nvr)
 
+#ifdef SET_STRING
     for (i = 0; i < nvr; i++) {
         char *string = (char *)comp->s[vr[i]];
         if (vrOutOfRange(comp, "fmi2SetString", vr[i], NUMBER_OF_STRINGS))
@@ -534,6 +675,10 @@ fmi2Status fmi2SetString (fmi2Component c, const fmi2ValueReference vr[], size_t
         }
     }
     if (nvr > 0) comp->isDirtyValues = fmi2True;
+#else
+    return fmi2Error;
+#endif
+
     return fmi2OK;
 }
 
@@ -608,16 +753,6 @@ fmi2Status fmi2CancelStep(fmi2Component c) {
 fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
                     fmi2Real communicationStepSize, fmi2Boolean noSetFMUStatePriorToCurrentPoint) {
     ModelInstance *comp = (ModelInstance *)c;
-    double h = communicationStepSize / 10;
-    int k,i;
-    const int n = 10; // how many Euler steps to perform for one do step
-    double prevState[max(NUMBER_OF_STATES, 1)];
-    double prevEventIndicators[max(NUMBER_OF_EVENT_INDICATORS, 1)];
-    int stateEvent = 0;
-    int timeEvent = 0;
-
-    if (invalidState(comp, "fmi2DoStep", MASK_fmi2DoStep))
-        return fmi2Error;
 
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2DoStep: "
         "currentCommunicationPoint = %g, "
@@ -632,60 +767,7 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
         return fmi2Error;
     }
 
-#if NUMBER_OF_EVENT_INDICATORS>0
-    // initialize previous event indicators with current values
-    for (i = 0; i < NUMBER_OF_EVENT_INDICATORS; i++) {
-        prevEventIndicators[i] = getEventIndicator(comp, i);
-    }
-#endif
-
-    // break the step into n steps and do forward Euler.
-    comp->time = currentCommunicationPoint;
-    for (k = 0; k < n; k++) {
-        comp->time += h;
-
-#if NUMBER_OF_STATES>0
-        for (i = 0; i < NUMBER_OF_STATES; i++) {
-            prevState[i] = r(vrStates[i]);
-        }
-        for (i = 0; i < NUMBER_OF_STATES; i++) {
-            fmi2ValueReference vr = vrStates[i];
-            r(vr) += h * getReal(comp, vr + 1); // forward Euler step
-        }
-#endif
-
-#if NUMBER_OF_EVENT_INDICATORS>0
-        // check for state event
-        for (i = 0; i < NUMBER_OF_EVENT_INDICATORS; i++) {
-            double ei = getEventIndicator(comp, i);
-            if (ei * prevEventIndicators[i] < 0) {
-                FILTERED_LOG(comp, fmi2OK, LOG_EVENT,
-                    "fmi2DoStep: state event at %g, z%d crosses zero -%c-", comp->time, i, ei < 0 ? '\\' : '/')
-                stateEvent++;
-            }
-            prevEventIndicators[i] = ei;
-        }
-#endif
-        // check for time event
-        if (comp->eventInfo.nextEventTimeDefined && (comp->time - comp->eventInfo.nextEventTime > -DT_EVENT_DETECT)) {
-            FILTERED_LOG(comp, fmi2OK, LOG_EVENT, "fmi2DoStep: time event detected at %g", comp->time)
-            timeEvent = 1;
-        }
-
-        if (stateEvent || timeEvent) {
-            eventUpdate(comp, &comp->eventInfo, timeEvent, fmi2True);
-            timeEvent = 0;
-            stateEvent = 0;
-        }
-
-        // terminate simulation, if requested by the model in the previous step
-        if (comp->eventInfo.terminateSimulation) {
-            FILTERED_LOG(comp, fmi2Discard, LOG_ALL, "fmi2DoStep: model requested termination at t=%g", comp->time)
-            comp->state = modelStepFailed;
-            return fmi2Discard; // enforce termination of the simulation loop
-        }
-    }
-    return fmi2OK;
+    return doStep(comp, currentCommunicationPoint, currentCommunicationPoint + communicationStepSize);
 }
 
 /* Inquire slave status */
@@ -741,7 +823,7 @@ fmi2Status fmi2GetBooleanStatus(fmi2Component c, const fmi2StatusKind s, fmi2Boo
         ModelInstance *comp = (ModelInstance *)c;
         if (invalidState(comp, "fmi2GetBooleanStatus", MASK_fmi2GetBooleanStatus))
             return fmi2Error;
-        *value = comp->eventInfo.terminateSimulation;
+        *value = comp->terminateSimulation;
         return fmi2OK;
     }
     return getStatus("fmi2GetBooleanStatus", c, s);
@@ -773,24 +855,26 @@ fmi2Status fmi2NewDiscreteStates(fmi2Component c, fmi2EventInfo *eventInfo) {
         return fmi2Error;
     FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2NewDiscreteStates")
 
-    comp->eventInfo.newDiscreteStatesNeeded = fmi2False;
-    comp->eventInfo.terminateSimulation = fmi2False;
-    comp->eventInfo.nominalsOfContinuousStatesChanged = fmi2False;
-    comp->eventInfo.valuesOfContinuousStatesChanged = fmi2False;
+    comp->newDiscreteStatesNeeded = fmi2False;
+    comp->terminateSimulation = fmi2False;
+    comp->nominalsOfContinuousStatesChanged = fmi2False;
+    comp->valuesOfContinuousStatesChanged = fmi2False;
 
-    if (comp->eventInfo.nextEventTimeDefined && comp->eventInfo.nextEventTime <= comp->time) {
+    if (comp->nextEventTimeDefined && comp->nextEventTime <= comp->time) {
         timeEvent = 1;
     }
-    eventUpdate(comp, &comp->eventInfo, timeEvent, comp->isNewEventIteration);
-    comp->isNewEventIteration = fmi2False;
+
+    eventUpdate(comp);
+    
+    comp->isNewEventIteration = FALSE;
 
     // copy internal eventInfo of component to output eventInfo
-    eventInfo->newDiscreteStatesNeeded = comp->eventInfo.newDiscreteStatesNeeded;
-    eventInfo->terminateSimulation = comp->eventInfo.terminateSimulation;
-    eventInfo->nominalsOfContinuousStatesChanged = comp->eventInfo.nominalsOfContinuousStatesChanged;
-    eventInfo->valuesOfContinuousStatesChanged = comp->eventInfo.valuesOfContinuousStatesChanged;
-    eventInfo->nextEventTimeDefined = comp->eventInfo.nextEventTimeDefined;
-    eventInfo->nextEventTime = comp->eventInfo.nextEventTime;
+    eventInfo->newDiscreteStatesNeeded           = comp->newDiscreteStatesNeeded;
+    eventInfo->terminateSimulation               = comp->terminateSimulation;
+    eventInfo->nominalsOfContinuousStatesChanged = comp->nominalsOfContinuousStatesChanged;
+    eventInfo->valuesOfContinuousStatesChanged   = comp->valuesOfContinuousStatesChanged;
+    eventInfo->nextEventTimeDefined              = comp->nextEventTimeDefined;
+    eventInfo->nextEventTime                     = comp->nextEventTime;
 
     return fmi2OK;
 }
@@ -839,69 +923,73 @@ fmi2Status fmi2SetContinuousStates(fmi2Component c, const fmi2Real x[], size_t n
         return fmi2Error;
     if (nullPointer(comp, "fmi2SetContinuousStates", "x[]", x))
         return fmi2Error;
-#if NUMBER_OF_STATES>0
-    for (i = 0; i < nx; i++) {
-        fmi2ValueReference vr = vrStates[i];
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetContinuousStates: #r%d#=%.16g", vr, x[i])
-        assert(vr < NUMBER_OF_REALS);
-        comp->r[vr] = x[i];
-    }
-#endif
+
+    setContinuousStates(comp, x, nx);
+
+//#if NUMBER_OF_STATES>0
+//    for (i = 0; i < nx; i++) {
+//        fmi2ValueReference vr = vrStates[i];
+//        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2SetContinuousStates: #r%d#=%.16g", vr, x[i])
+//        assert(vr < NUMBER_OF_REALS);
+//        comp->r[vr] = x[i];
+//    }
+//#endif
     return fmi2OK;
 }
 
 /* Evaluation of the model equations */
 fmi2Status fmi2GetDerivatives(fmi2Component c, fmi2Real derivatives[], size_t nx) {
     int i;
+
     ModelInstance* comp = (ModelInstance *)c;
+
     if (invalidState(comp, "fmi2GetDerivatives", MASK_fmi2GetDerivatives))
         return fmi2Error;
+
     if (invalidNumber(comp, "fmi2GetDerivatives", "nx", nx, NUMBER_OF_STATES))
         return fmi2Error;
+
     if (nullPointer(comp, "fmi2GetDerivatives", "derivatives[]", derivatives))
         return fmi2Error;
-#if NUMBER_OF_STATES>0
-    for (i = 0; i < nx; i++) {
-        fmi2ValueReference vr = vrStates[i] + 1;
-        derivatives[i] = getReal(comp, vr); // to be implemented by the includer of this file
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2GetDerivatives: #r%d# = %.16g", vr, derivatives[i])
-    }
-#endif
+
+    getDerivatives(comp, derivatives, nx);
+
     return fmi2OK;
 }
 
 fmi2Status fmi2GetEventIndicators(fmi2Component c, fmi2Real eventIndicators[], size_t ni) {
-    int i;
+
+#if NUMBER_OF_EVENT_INDICATORS > 0
     ModelInstance *comp = (ModelInstance *)c;
+
     if (invalidState(comp, "fmi2GetEventIndicators", MASK_fmi2GetEventIndicators))
         return fmi2Error;
+
     if (invalidNumber(comp, "fmi2GetEventIndicators", "ni", ni, NUMBER_OF_EVENT_INDICATORS))
         return fmi2Error;
-#if NUMBER_OF_EVENT_INDICATORS>0
-    for (i = 0; i < ni; i++) {
-        eventIndicators[i] = getEventIndicator(comp, i); // to be implemented by the includer of this file
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2GetEventIndicators: z%d = %.16g", i, eventIndicators[i])
-    }
+
+    getEventIndicators(comp, eventIndicators, ni);
+#else
+    if (ni > 0) return fmi2Error;
 #endif
     return fmi2OK;
 }
 
 fmi2Status fmi2GetContinuousStates(fmi2Component c, fmi2Real states[], size_t nx) {
-    int i;
+
     ModelInstance *comp = (ModelInstance *)c;
+
     if (invalidState(comp, "fmi2GetContinuousStates", MASK_fmi2GetContinuousStates))
         return fmi2Error;
+
     if (invalidNumber(comp, "fmi2GetContinuousStates", "nx", nx, NUMBER_OF_STATES))
         return fmi2Error;
+
     if (nullPointer(comp, "fmi2GetContinuousStates", "states[]", states))
         return fmi2Error;
-#if NUMBER_OF_STATES>0
-    for (i = 0; i < nx; i++) {
-        fmi2ValueReference vr = vrStates[i];
-        states[i] = getReal(comp, vr); // to be implemented by the includer of this file
-        FILTERED_LOG(comp, fmi2OK, LOG_FMI_CALL, "fmi2GetContinuousStates: #r%u# = %.16g", vr, states[i])
-    }
-#endif
+
+    getContinuousStates(comp, states, nx);
+    
     return fmi2OK;
 }
 
@@ -919,7 +1007,3 @@ fmi2Status fmi2GetNominalsOfContinuousStates(fmi2Component c, fmi2Real x_nominal
         x_nominal[i] = 1;
     return fmi2OK;
 }
-
-#ifdef __cplusplus
-} // closing brace for extern "C"
-#endif

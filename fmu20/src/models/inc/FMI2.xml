@@ -5,9 +5,13 @@
   guid="{8c4e810f-3df3-4a00-8276-176fa3c9f008}"
   numberOfEventIndicators="0">
 
-<CoSimulation
-  modelIdentifier="inc"
-  canHandleVariableCommunicationStepSize="true">
+<ModelExchange modelIdentifier="inc">
+  <SourceFiles>
+    <File name="inc.c"/>
+  </SourceFiles>
+</ModelExchange>
+
+<CoSimulation modelIdentifier="inc" canHandleVariableCommunicationStepSize="true">
   <SourceFiles>
     <File name="inc.c"/>
   </SourceFiles>
@@ -20,10 +24,11 @@
   <Category name="logEvent"/>
 </LogCategories>
 
+<DefaultExperiment startTime="0" stopTime="10"/>
+
 <ModelVariables>
-  <ScalarVariable name="counter" valueReference="0" description="counts the seconds"
-                  causality="output" variability="discrete" initial="exact">
-     <Integer start="1"/>
+  <ScalarVariable name="counter" valueReference="0" description="counts the seconds" causality="output" variability="discrete" initial="exact">
+    <Integer start="1"/>
   </ScalarVariable>
 </ModelVariables>
 
