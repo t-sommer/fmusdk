@@ -31,7 +31,6 @@
 #include "solver.h"
 #include "slave.h"
 
-//#define FMI_COSIMULATION
 
 #ifdef FMI_COSIMULATION
 #include "fmiFunctions.h"
@@ -171,33 +170,19 @@ static fmiComponent instantiateModel(char* fname, fmiString instanceName, fmiStr
 }
 
 // fname is fmiInitialize or fmiInitializeSlave
-static fmiStatus init(char* fname, fmiComponent c, fmiBoolean toleranceControlled, fmiReal relativeTolerance,
-    fmiEventInfo* eventInfo) {
+static fmiStatus init(fmiComponent c) {
     ModelInstance* comp = (ModelInstance *)c;
-//    if (invalidState(comp, fname, modelInstantiated))
-//         return fmiError;
-//    if (nullPointer(comp, fname, "eventInfo", eventInfo))
-//         return fmiError;
-//    if (comp->loggingOn) comp->logger(c, comp->instanceName, fmiOK, "log",
-//        "%s: toleranceControlled=%d relativeTolerance=%g", 
-//        fname, toleranceControlled, relativeTolerance);
-//    eventInfo->iterationConverged  = fmiTrue;
-//    eventInfo->stateValueReferencesChanged = fmiFalse;
-//    eventInfo->stateValuesChanged  = fmiFalse;
-//    eventInfo->terminateSimulation = fmiFalse;
-//    eventInfo->upcomingTimeEvent   = fmiFalse;
-//    initialize(comp, eventInfo); // to be implemented by the includer of this file
     comp->state = modelInitialized;
     return fmiOK;
 }
 
 // fname is fmiTerminate or fmiTerminateSlave
 static fmiStatus terminate(char* fname, fmiComponent c) {
-//    ModelInstance* comp = (ModelInstance *)c;
-//    if (invalidState(comp, fname, modelInitialized))
-//         return fmiError;
-//    if (comp->loggingOn) comp->logger(c, comp->instanceName, fmiOK, "log", fname);
-//    comp->state = modelTerminated;
+    ModelInstance* comp = (ModelInstance *)c;
+    if (invalidState(comp, fname, modelInitialized))
+         return fmiError;
+    if (comp->loggingOn) comp->logger(c, comp->instanceName, fmiOK, "log", fname);
+    comp->state = modelTerminated;
     return fmiOK;
 }
 
@@ -474,16 +459,7 @@ fmiComponent fmiInstantiateSlave(fmiString  instanceName, fmiString GUID,
 }
 
 fmiStatus fmiInitializeSlave(fmiComponent c, fmiReal tStart, fmiBoolean StopTimeDefined, fmiReal tStop) {
-//    ModelInstance* comp = (ModelInstance *)c;
-//    fmiBoolean toleranceControlled = fmiFalse;
-//    fmiReal relativeTolerance = 0;
-//    fmiStatus flag = fmiOK;
-//    comp->eventInfo.iterationConverged = 0;
-//    while (flag==fmiOK && !comp->eventInfo.iterationConverged) {
-//        // ignoring arguments: tStart, StopTimeDefined, tStop
-//        flag = init("fmiInitializeSlave", c, toleranceControlled, relativeTolerance, &comp->eventInfo);
-//    }
-//    return flag;
+    init(c);
     return fmiOK;
 }
 
@@ -609,7 +585,7 @@ fmiComponent fmiInstantiateModel(fmiString instanceName, fmiString GUID,  fmiCal
 }
 
 fmiStatus fmiInitialize(fmiComponent c, fmiBoolean toleranceControlled, fmiReal relativeTolerance, fmiEventInfo* eventInfo) {
-    return init("fmiInitialize", c, toleranceControlled, relativeTolerance, eventInfo);
+    return init(c);
 }
 
 fmiStatus fmiSetTime(fmiComponent c, fmiReal time) {

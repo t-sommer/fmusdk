@@ -76,11 +76,17 @@ typedef struct {
     const char *GUID;
 
     // callback functions
+#if FMI_VERSION < 3
     void  (*logger)(void *, const char *, int, const char *, const char *, ...);
     void* (*allocateMemory)(size_t, size_t);
     void  (*freeMemory)(void *);
     void  (*stepFinished)(void *, int);
-    
+#else
+    void  (*logger)(void *, const char *, int, const char *, const char *, ...);
+    void* (*allocateMemory)(void *, size_t, size_t);
+    void  (*freeMemory)(void *, void *);
+    void  (*stepFinished)(void *, void *, int);
+#endif
     boolean loggingOn;
     boolean logCategories[NUMBER_OF_CATEGORIES];
 

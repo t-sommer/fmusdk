@@ -24,6 +24,8 @@
   <Category name="logEvent"/>
 </LogCategories>
 
+<DefaultExperiment startTime="0" stopTime="2"/>
+
 <ModelVariables>
   <ScalarVariable name="real_in" valueReference="0" description="" causality="input" variability="discrete" initial="exact">
     <Real start="1"/>

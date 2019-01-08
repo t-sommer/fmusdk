@@ -1,4 +1,6 @@
 #include "solver.h"
+#include <stdlib.h>
+
 
 typedef struct {
     int nx;
@@ -10,13 +12,13 @@ typedef struct {
 } SolverData;
 
 void *solver_create(ModelInstance *comp) {
-    SolverData *s = (SolverData *)comp->allocateMemory(1, sizeof(SolverData));
+    SolverData *s = (SolverData *)comp->allocateMemory(NULL, 1, sizeof(SolverData));
     s->nx   = NUMBER_OF_STATES;
     s->nz   = NUMBER_OF_EVENT_INDICATORS;
-    s->x    = (double *)comp->allocateMemory(s->nx, sizeof(double));
-    s->dx   = (double *)comp->allocateMemory(s->nx, sizeof(double));
-    s->z    = (double *)comp->allocateMemory(s->nz, sizeof(double));
-    s->prez = (double *)comp->allocateMemory(s->nz, sizeof(double));
+    s->x    = (double *)calloc(s->nx, sizeof(double));
+    s->dx   = (double *)calloc(s->nx, sizeof(double));
+    s->z    = (double *)calloc(s->nz, sizeof(double));
+    s->prez = (double *)calloc(s->nz, sizeof(double));
     return s;
 }
 

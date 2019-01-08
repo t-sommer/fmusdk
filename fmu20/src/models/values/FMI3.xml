@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<fmiModelDescription
+  fmiVersion="3.0-alpha"
+  modelName="values"
+  guid="{8c4e810f-3df3-4a00-8276-176fa3c9f004}"
+  numberOfEventIndicators="0">
+
+<ModelExchange modelIdentifier="values">
+  <SourceFiles>
+    <File name="values.c"/>
+  </SourceFiles>
+</ModelExchange>
+
+<CoSimulation modelIdentifier="values" canHandleVariableCommunicationStepSize="true">
+  <SourceFiles>
+    <File name="values.c"/>
+  </SourceFiles>
+</CoSimulation>
+
+<LogCategories>
+  <Category name="logAll"/>
+  <Category name="logError"/>
+  <Category name="logFmiCall"/>
+  <Category name="logEvent"/>
+</LogCategories>
+
+<DefaultExperiment startTime="0" stopTime="2"/>
+
+<ModelVariables>
+  <Variable name="real_in" valueReference="0" description="" causality="input" variability="discrete" initial="exact">
+    <Float64 start="1"/>
+  </Variable>
+  <Variable name="real_out" valueReference="1" description="" causality="output" variability="discrete" initial="calculated">
+    <Float64 derivative="1"/>
+  </Variable>
+  <Variable name="int_in" valueReference="2" description="" causality="input" variability="discrete">
+    <Int32 start="2"/>
+  </Variable>
+  <Variable name="int_out" valueReference="3" description="" causality="output" variability="discrete" initial="exact">
+    <Int32 start="0"/>
+  </Variable>
+  <Variable name="bool_in" valueReference="4" description="boolean input" causality="input" variability="discrete">
+    <Boolean start="true"/>
+  </Variable>
+  <Variable name="bool_out" valueReference="5" description="boolean output" causality="output" variability="discrete" initial="exact">
+    <Boolean start="false"/>
+  </Variable>
+  <Variable name="string_in" valueReference="6" description="string input" causality="parameter" variability="tunable">
+    <String start="QTronic"/>
+  </Variable>
+</ModelVariables>
+
+<ModelStructure>
+  <Outputs>
+    <Unknown valueReference="1"/>
+    <Unknown valueReference="3"/>
+    <Unknown valueReference="5"/>
+  </Outputs>
+</ModelStructure>
+
+</fmiModelDescription>
